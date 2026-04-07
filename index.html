@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PGRCDC</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #4f46e5; --bg: #f3f4f6; --card: #ffffff;
+            --demandas: #e0e7ff; --controle: #d1fae5; --apoio: #fef3c7;
+            --border: #e5e7eb; --text: #1a1a1a;
+        }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 20px; color: var(--text); }
+        .nav-bar { display: flex; gap: 10px; margin-bottom: 20px; justify-content: center; background: white; padding: 10px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .nav-btn { padding: 10px 20px; cursor: pointer; border-radius: 8px; border: 1px solid var(--primary); background: white; color: var(--primary); font-weight: bold; }
+        .nav-btn.active { background: var(--primary); color: white; }
+        .container { max-width: 1000px; margin: auto; }
+        .screen { display: none; }
+        .screen.active { display: block; }
+        .q-card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 15px; border: 1px solid var(--border); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .tag { font-size: 11px; padding: 4px 12px; border-radius: 20px; font-weight: bold; text-transform: uppercase; }
+        .option { display: grid; grid-template-columns: 1fr auto; padding: 12px 0; border-top: 1px solid #f0f0f0; align-items: center; }
+        .weight { background: #f3f4f6; padding: 3px 10px; border-radius: 5px; font-size: 11px; font-weight: bold; }
+        .primary-btn { width: 100%; padding: 18px; background: var(--primary); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .ia-box { background: #f0f7ff; border-left: 6px solid var(--primary); padding: 20px; border-radius: 0 12px 12px 0; margin-top: 15px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
+        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #eee; }
+    </style>
+</head>
+<body>
+
+<div class="nav-bar">
+    <button id="btn-colab" class="nav-btn active">Modo Colaborador</button>
+    <button id="btn-admin" class="nav-btn">Painel Administrativo</button>
+</div>
+
+<div class="container">
+    <div id="screen-colaborador" class="screen active">
+        <div style="text-align:center; margin-bottom:25px;">
+            <h1 style="color:var(--primary)">Avaliação de Riscos Psicossociais</h1>
+            <select id="setor-select" style="padding:12px; width:350px; border-radius:8px; border:1px solid #ccc; font-weight: bold;">
+                <option value="">SELECIONE SEU SETOR...</option>
+                <option value="ADMINISTRATIVO">ADMINISTRATIVO</option>
+                <option value="PEDAGÓGICO">PEDAGÓGICO</option>
+                <option value="ESPECIALIDADES">ESPECIALIDADES</option>
+                <option value="NUTRIÇÃO">NUTRIÇÃO</option>
+                <option value="TI">TI</option>
+                <option value="COMUNICAÇÃO">COMUNICAÇÃO</option>
+                <option value="INFRAESTRUTURA">INFRAESTRUTURA</option>
+                <option value="SISTEMA INTEGRAL">SISTEMA INTEGRAL</option>
+                <option value="RECURSOS HUMANOS">RECURSOS HUMANOS</option>
+                <option value="DEPARTAMENTO PESSOAL">DEPARTAMENTO PESSOAL</option>
+                <option value="EVENTOS">EVENTOS</option>
+                <option value="ENFERMAGEM">ENFERMAGEM</option>
+                <option value="DIRETORIA">DIRETORIA</option>
+            </select>
+        </div>
+        <form id="form-pgr">
+            <div id="container-questoes"></div>
+            <button type="submit" class="primary-btn">Enviar Avaliação ao Firestore</button>
+        </form>
+    </div>
+
+    <div id="screen-admin" class="screen">
+        <div class="q-card" style="text-align:center;">
+            <h2>Painel de Controle PGR</h2>
+            <button id="btn-gerar-relatorio" class="primary-btn" style="background:#059669; width:auto; padding:15px 60px;">PROCESSAR DADOS E GERAR PLANO DE AÇÃO</button>
+        </div>
+        <div id="relatorio-ia-area" class="screen" style="margin-top:20px;">
+            <div class="q-card">
+                <div id="ia-content"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDiDnudAseB_doNU0cMHPqF8sDZ_UL7ILA",
+        authDomain: "pgrcdc-a6d0f.firebaseapp.com",
+        projectId: "pgrcdc-a6d0f",
+        storageBucket: "pgrcdc-a6d0f.firebasestorage.app",
+        messagingSenderId: "540389187712",
+        appId: "1:540389187712:web:59b890f342e0050fe3c665"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const perguntas = [
+        { id: 1, dim: "Demandas", txt: "Com que frequência você tem que fazer suas tarefas de trabalho com muita rapidez?" },
+        { id: 2, dim: "Demandas", txt: "Com que frequência você tem que trabalhar intensamente?" },
+        { id: 3, dim: "Demandas", txt: "Seu trabalho exige demais de você?" },
+        { id: 4, dim: "Demandas", txt: "Você tem tempo suficiente para cumprir todas as tarefas?" },
+        { id: 5, dim: "Demandas", txt: "O seu trabalho costuma apresentar exigências contraditórias?" },
+        { id: 6, dim: "Controle", txt: "Você tem possibilidade de aprender coisas novas em seu trabalho?" },
+        { id: 7, dim: "Controle", txt: "Seu trabalho exige muita habilidade especializada?" },
+        { id: 8, dim: "Controle", txt: "Seu trabalho exige que você tome iniciativas?" },
+        { id: 9, dim: "Controle", txt: "No seu trabalho, você tem que repetir muitas vezes as mesmas tarefas?" },
+        { id: 10, dim: "Controle", txt: "Você pode escolher COMO fazer o seu trabalho?" },
+        { id: 11, dim: "Controle", txt: "Você pode escolher O QUE fazer no seu trabalho?" },
+        { id: 12, dim: "Apoio Social", txt: "Existe um ambiente calmo e agradável onde trabalho?" },
+        { id: 13, dim: "Apoio Social", txt: "No trabalho, nos relacionamos bem uns com os outros." },
+        { id: 14, dim: "Apoio Social", txt: "Eu posso contar com o apoio dos meus colegas." },
+        { id: 15, dim: "Apoio Social", txt: "Se eu não estiver num bom dia, meus colegas compreendem." },
+        { id: 16, dim: "Apoio Social", txt: "No trabalho, eu me relaciono bem com meus chefes." },
+        { id: 17, dim: "Apoio Social", txt: "Eu gosto de trabalhar com meus colegas." }
+    ];
+
+    // Renderizar formulário
+    const container = document.getElementById('container-questoes');
+    perguntas.forEach(p => {
+        const labels = p.id >= 12 ? ["Concordo Totalmente", "Concordo Parcialmente", "Discordo Parcialmente", "Discordo Totalmente"] : ["Frequentemente", "Às vezes", "Raramente", "Nunca"];
+        let options = labels.map((l, i) => `
+            <div class="option">
+                <label><input type="radio" name="q${p.id}" value="${4-i}" required> ${l}</label>
+                <span class="weight">Peso: ${4-i}</span>
+            </div>`).join('');
+        container.innerHTML += `<div class="q-card"><div class="tag" style="background:#eee">${p.dim}</div><p><strong>${p.id}. ${p.txt}</strong></p>${options}</div>`;
+    });
+
+    // Salvar no Firebase
+    document.getElementById('form-pgr').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const setor = document.getElementById('setor-select').value;
+        if(!setor) return alert("Selecione o setor!");
+
+        let somas = { Demandas: 0, Controle: 0, Apoio: 0 };
+        perguntas.forEach(p => {
+            const val = parseInt(document.querySelector(`input[name="q${p.id}"]:checked`).value);
+            somas[p.dim === "Apoio Social" ? "Apoio" : p.dim] += val;
+        });
+
+        try {
+            await addDoc(collection(db, "respostas_jss"), { setor, ...somas, data: new Date() });
+            alert("Sucesso! Dados enviados ao Firebase.");
+            e.target.reset();
+        } catch (err) { alert("Erro ao salvar: " + err.message); }
+    });
+
+    // Alternar Telas
+    document.getElementById('btn-colab').onclick = () => {
+        document.getElementById('screen-colaborador').classList.add('active');
+        document.getElementById('screen-admin').classList.remove('active');
+    };
+    document.getElementById('btn-admin').onclick = () => {
+        document.getElementById('screen-admin').classList.add('active');
+        document.getElementById('screen-colaborador').classList.remove('active');
+    };
+
+    // Gerar Relatório Dinâmico
+    document.getElementById('btn-gerar-relatorio').onclick = async () => {
+        const snapshot = await getDocs(collection(db, "respostas_jss"));
+        let dadosSetores = {};
+
+        snapshot.forEach(doc => {
+            const r = doc.data();
+            if(!dadosSetores[r.setor]) dadosSetores[r.setor] = { d: [], c: [], a: [] };
+            dadosSetores[r.setor].d.push(r.Demandas);
+            dadosSetores[r.setor].c.push(r.Controle);
+            dadosSetores[r.setor].a.push(r.Apoio);
+        });
+
+        let htmlTabela = "";
+        for (let s in dadosSetores) {
+            const mD = dadosSetores[s].d.reduce((a,b)=>a+b)/dadosSetores[s].d.length;
+            const mC = dadosSetores[s].c.reduce((a,b)=>a+b)/dadosSetores[s].c.length;
+            const mA = dadosSetores[s].a.reduce((a,b)=>a+b)/dadosSetores[s].a.length;
+
+            if(mD > 15 || mC < 15 || mA < 15) {
+                htmlTabela += `<tr><td>${s}</td><td>${mD > 15 ? 'Alta Demanda ' : ''}${mA < 15 ? 'Baixo Apoio' : ''}</td><td>Intervenção Psicossocial</td><td>30 dias</td></tr>`;
+            }
+        }
+
+        document.getElementById('relatorio-ia-area').classList.add('active');
+        document.getElementById('ia-content').innerHTML = `
+            <h3>🤖 Plano de Ação</h3>
+            <div class="ia-box"><strong>Diagnóstico:</strong> Com base em ${snapshot.size} respostas, identificamos riscos nos setores listados abaixo.</div>
+            <table><thead><tr><th>Setor</th><th>Risco JSS</th><th>Plano de Ação</th><th>Prazo</th></tr></thead><tbody>${htmlTabela || '<tr><td colspan="4">Nenhum risco crítico identificado.</td></tr>'}</tbody></table>
+        `;
+    };
+</script>
+</body>
+</html>
