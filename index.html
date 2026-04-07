@@ -59,14 +59,13 @@
         </div>
         <form id="form-pgr">
             <div id="container-questoes"></div>
-            <button type="button" onclick="window.enviarAvaliacao()" class="primary-btn">Enviar Avaliação ao Firestore</button>
+            <button type="button" id="btn-enviar" class="primary-btn">Enviar Avaliação ao Firestore</button>
         </form>
     </div>
 
     <div id="screen-admin" class="screen">
         <div class="q-card" style="text-align:center;">
             <h2>Painel Administrativo - PGR</h2>
-            <p>Clique abaixo para calcular os riscos com base nos dados reais do banco.</p>
             <button id="btn-gerar-relatorio" class="primary-btn" style="background:#059669; width:auto; padding:15px 60px;">PROCESSAR DADOS E GERAR PLANO DE AÇÃO</button>
         </div>
         <div id="relatorio-ia-area" class="screen" style="margin-top:20px;">
@@ -83,7 +82,8 @@
         initializeFirestore, 
         collection, 
         addDoc, 
-        getDocs 
+        getDocs,
+        terminate 
     } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -97,9 +97,10 @@
 
     const app = initializeApp(firebaseConfig);
     
-    // CORREÇÃO CORS: Força Long Polling para funcionar no GitHub Pages
+    // CONFIGURAÇÃO CRÍTICA PARA GITHUB PAGES (Evita erro de CORS/Write Stream)
     const db = initializeFirestore(app, {
-        experimentalForceLongPolling: true
+        experimentalForceLongPolling: true,
+        useFetchStreams: false
     });
 
     const perguntas = [
@@ -122,7 +123,6 @@
         { id: 17, dim: "Apoio Social", txt: "Eu gosto de trabalhar com meus colegas." }
     ];
 
-    // Renderizar formulário
     const container = document.getElementById('container-questoes');
     perguntas.forEach(p => {
         const labels = p.id >= 12 ? ["Concordo Totalmente", "Concordo Parcialmente", "Discordo Parcialmente", "Discordo Totalmente"] : ["Frequentemente", "Às vezes", "Raramente", "Nunca"];
@@ -135,104 +135,75 @@
         container.innerHTML += `<div class="q-card"><div class="tag" style="background:${color}">${p.dim}</div><p><strong>${p.id}. ${p.txt}</strong></p>${options}</div>`;
     });
 
-    // Função de Envio (Global)
-    window.enviarAvaliacao = async () => {
+    // Função de Envio
+    document.getElementById('btn-enviar').onclick = async () => {
         const setor = document.getElementById('setor-select').value;
-        if(!setor) return alert("Por favor, selecione o seu setor!");
-
-        const inputs = document.querySelectorAll('input[type="radio"]:checked');
-        if(inputs.length < 17) return alert("Por favor, responda a todas as 17 perguntas!");
+        if(!setor) return alert("Selecione o setor!");
+        
+        const respondidas = document.querySelectorAll('input[type="radio"]:checked');
+        if(respondidas.length < 17) return alert("Responda todas as perguntas!");
 
         let somas = { Demandas: 0, Controle: 0, Apoio: 0 };
         perguntas.forEach(p => {
             const val = parseInt(document.querySelector(`input[name="q${p.id}"]:checked`).value);
-            const dimKey = p.dim === "Apoio Social" ? "Apoio" : p.dim;
-            somas[dimKey] += val;
+            const key = p.dim === "Apoio Social" ? "Apoio" : p.dim;
+            somas[key] += val;
         });
 
         try {
+            document.getElementById('btn-enviar').disabled = true;
+            document.getElementById('btn-enviar').innerText = "Enviando...";
+            
             await addDoc(collection(db, "respostas_jss"), {
                 setor,
                 ...somas,
                 data: new Date()
             });
-            alert("Avaliação enviada com sucesso para o banco de dados!");
+
+            alert("Sucesso! Dados gravados no Firestore.");
             document.getElementById('form-pgr').reset();
             window.scrollTo(0,0);
         } catch (err) {
-            console.error(err);
-            alert("Erro ao enviar: " + err.message);
+            console.error("Erro completo:", err);
+            alert("Erro: " + err.message);
+        } finally {
+            document.getElementById('btn-enviar').disabled = false;
+            document.getElementById('btn-enviar').innerText = "Enviar Avaliação ao Firestore";
         }
     };
 
-    // Alternância de telas
+    // Navegação
     document.getElementById('btn-colab').onclick = () => {
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById('screen-colaborador').classList.add('active');
-        document.getElementById('btn-colab').classList.add('active');
-        document.getElementById('btn-admin').classList.remove('active');
+        document.getElementById('screen-admin').classList.remove('active');
     };
-
     document.getElementById('btn-admin').onclick = () => {
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById('screen-admin').classList.add('active');
-        document.getElementById('btn-admin').classList.add('active');
-        document.getElementById('btn-colab').classList.remove('active');
+        document.getElementById('screen-colaborador').classList.remove('active');
     };
 
-    // Gerar Relatório Dinâmico com dados do Firebase
+    // Relatório
     document.getElementById('btn-gerar-relatorio').onclick = async () => {
-        const btn = document.getElementById('btn-gerar-relatorio');
-        btn.innerText = "Processando...";
-        
         const snapshot = await getDocs(collection(db, "respostas_jss"));
         let analise = {};
-
         snapshot.forEach(doc => {
-            const data = doc.data();
-            if(!analise[data.setor]) analise[data.setor] = { d: [], c: [], a: [] };
-            analise[data.setor].d.push(data.Demandas);
-            analise[data.setor].c.push(data.Controle);
-            analise[data.setor].a.push(data.Apoio);
+            const d = doc.data();
+            if(!analise[d.setor]) analise[d.setor] = { d: [], c: [], a: [] };
+            analise[d.setor].d.push(d.Demandas);
+            analise[d.setor].c.push(d.Controle);
+            analise[d.setor].a.push(d.Apoio);
         });
 
-        let htmlTabela = "";
-        let setoresCriticos = 0;
-
-        for (let setor in analise) {
-            const mD = analise[setor].d.reduce((a,b)=>a+b)/analise[setor].d.length;
-            const mC = analise[setor].c.reduce((a,b)=>a+b)/analise[setor].c.length;
-            const mA = analise[setor].a.reduce((a,b)=>a+b)/analise[setor].a.length;
-
-            if(mD > 15 || mC < 15 || mA < 15) {
-                setoresCriticos++;
-                htmlTabela += `
-                    <tr>
-                        <td><strong>${setor}</strong></td>
-                        <td>${mD > 15 ? '⚠️ Alta Demanda ' : ''} ${mA < 15 ? '⚠️ Baixo Apoio' : ''}</td>
-                        <td>${mD > 15 ? 'Readequação de prazos' : 'Workshop de Clima Organizacional'}</td>
-                        <td>15-30 dias</td>
-                    </tr>`;
+        let html = "";
+        for (let s in analise) {
+            const mD = analise[s].d.reduce((a,b)=>a+b)/analise[s].d.length;
+            const mA = analise[s].a.reduce((a,b)=>a+b)/analise[s].a.length;
+            if(mD > 15 || mA < 15) {
+                html += `<tr><td>${s}</td><td>${mD > 15 ? 'Alta Carga' : 'Baixo Suporte'}</td><td>Intervenção</td><td>30d</td></tr>`;
             }
         }
-
-        btn.innerText = "PROCESSAR DADOS E GERAR PLANO DE AÇÃO";
         document.getElementById('relatorio-ia-area').classList.add('active');
-        document.getElementById('ia-content').innerHTML = `
-            <h3 style="color:#ef4444">Relatório de Risco Dinâmico (${snapshot.size} amostras)</h3>
-            <div class="ia-box">
-                <strong>Análise da IA:</strong> Identificamos ${setoresCriticos} setores com desequilíbrio entre esforço e recompensa. 
-                Os dados sugerem intervenções focadas em suporte social e gestão de tempo.
-            </div>
-            <table>
-                <thead>
-                    <tr><th>Setor</th><th>Risco Identificado</th><th>Medida Preventiva</th><th>Prazo</th></tr>
-                </thead>
-                <tbody>
-                    ${htmlTabela || '<tr><td colspan="4">Parabéns! Nenhum setor crítico identificado até o momento.</td></tr>'}
-                </tbody>
-            </table>
-        `;
+        document.getElementById('ia-content').innerHTML = `<table><thead><tr><th>Setor</th><th>Risco</th><th>Ação</th><th>Prazo</th></tr></thead><tbody>${html || '<tr><td colspan="4">Sem riscos</td></tr>'}</tbody></table>`;
     };
 </script>
 </body>
