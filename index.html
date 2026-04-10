@@ -10,6 +10,7 @@
             --primary: #4f46e5; --bg: #f3f4f6; --card: #ffffff;
             --demandas: #e0e7ff; --controle: #d1fae5; --apoio: #fef3c7;
             --border: #e5e7eb; --text: #1a1a1a;
+            --danger: #dc2626; --warning: #f59e0b; --success: #16a34a;
         }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 20px; color: var(--text); }
         .nav-bar { display: flex; gap: 10px; margin-bottom: 20px; justify-content: center; background: white; padding: 10px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
@@ -23,10 +24,10 @@
         .option { display: grid; grid-template-columns: 1fr auto; padding: 12px 0; border-top: 1px solid #f0f0f0; align-items: center; }
         .weight { background: #f3f4f6; padding: 3px 10px; border-radius: 5px; font-size: 11px; font-weight: bold; }
         .primary-btn { width: 100%; padding: 18px; background: var(--primary); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        .ia-box { background: #f0f7ff; border-left: 6px solid var(--primary); padding: 20px; border-radius: 0 12px 12px 0; margin-top: 15px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; border-radius: 8px; overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; border-radius: 8px; overflow: hidden; font-size: 14px; }
         th, td { text-align: left; padding: 12px; border-bottom: 1px solid #eee; }
         th { background: #f9fafb; }
+        .risk-badge { padding: 4px 8px; border-radius: 4px; color: white; font-weight: bold; font-size: 12px; }
     </style>
 </head>
 <body>
@@ -34,27 +35,19 @@
 <div class="nav-bar">
     <button id="btn-colab" class="nav-btn active">Modo Colaborador</button>
     <button id="btn-admin" class="nav-btn">Painel Administrativo</button>
-    <button id="btn-admin" class="nav-btn">Mapas Ações</button>
 </div>
 
 <div class="container">
     <div id="screen-colaborador" class="screen active">
         <div style="text-align:center; margin-bottom:25px;">
             <h1 style="color:var(--primary)">Avaliação de Riscos Psicossociais</h1>
+            <p>Os escores são calculados conforme o modelo demanda-controle.</p>
             <select id="setor-select" style="padding:12px; width:350px; border-radius:8px; border:1px solid #ccc; font-weight: bold;">
                 <option value="">SELECIONE SEU SETOR...</option>
                 <option value="ADMINISTRATIVO">ADMINISTRATIVO</option>
                 <option value="PEDAGÓGICO">PEDAGÓGICO</option>
-                <option value="ESPECIALIDADES">ESPECIALIDADES</option>
-                <option value="NUTRIÇÃO">NUTRIÇÃO</option>
                 <option value="TI">TI</option>
-                <option value="COMUNICAÇÃO">COMUNICAÇÃO</option>
-                <option value="INFRAESTRUTURA">INFRAESTRUTURA</option>
-                <option value="SISTEMA INTEGRAL">SISTEMA INTEGRAL</option>
                 <option value="RECURSOS HUMANOS">RECURSOS HUMANOS</option>
-                <option value="DEPARTAMENTO PESSOAL">DEPARTAMENTO PESSOAL</option>
-                <option value="EVENTOS">EVENTOS</option>
-                <option value="ENFERMAGEM">ENFERMAGEM</option>
                 <option value="DIRETORIA">DIRETORIA</option>
             </select>
         </div>
@@ -66,8 +59,9 @@
 
     <div id="screen-admin" class="screen">
         <div class="q-card" style="text-align:center;">
-            <h2>Painel Administrativo - PGR</h2>
-            <button id="btn-gerar-relatorio" class="primary-btn" style="background:#059669; width:auto; padding:15px 60px;">PROCESSAR DADOS E GERAR PLANO DE AÇÃO</button>
+            <h2>Painel de Análise Metodológica</h2>
+            <p>Cálculo baseado na mediana do grupo e cruzamento de quadrantes.</p>
+            <button id="btn-gerar-relatorio" class="primary-btn" style="background:#059669; width:auto; padding:15px 60px;">PROCESSAR MEDIANAS E GERAR PLANO</button>
         </div>
         <div id="relatorio-ia-area" class="screen" style="margin-top:20px;">
             <div class="q-card">
@@ -79,13 +73,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { 
-        initializeFirestore, 
-        collection, 
-        addDoc, 
-        getDocs,
-        terminate 
-    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { initializeFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyDiDnudAseB_doNU0cMHPqF8sDZ_UL7ILA",
@@ -97,23 +85,18 @@
     };
 
     const app = initializeApp(firebaseConfig);
-    
-    // CONFIGURAÇÃO CRÍTICA PARA GITHUB PAGES (Evita erro de CORS/Write Stream)
-    const db = initializeFirestore(app, {
-        experimentalForceLongPolling: true,
-        useFetchStreams: false
-    });
+    const db = initializeFirestore(app, { experimentalForceLongPolling: true });
 
     const perguntas = [
         { id: 1, dim: "Demandas", txt: "Com que frequência você tem que fazer suas tarefas de trabalho com muita rapidez?" },
         { id: 2, dim: "Demandas", txt: "Com que frequência você tem que trabalhar intensamente?" },
         { id: 3, dim: "Demandas", txt: "Seu trabalho exige demais de você?" },
-        { id: 4, dim: "Demandas", txt: "Você tem tempo suficiente para cumprir todas as tarefas?" },
+        { id: 4, dim: "Demandas", txt: "Você tem tempo suficiente para cumprir todas as tarefas?", invert: true },
         { id: 5, dim: "Demandas", txt: "O seu trabalho costuma apresentar exigências contraditórias?" },
         { id: 6, dim: "Controle", txt: "Você tem possibilidade de aprender coisas novas em seu trabalho?" },
         { id: 7, dim: "Controle", txt: "Seu trabalho exige muita habilidade especializada?" },
         { id: 8, dim: "Controle", txt: "Seu trabalho exige que você tome iniciativas?" },
-        { id: 9, dim: "Controle", txt: "No seu trabalho, você tem que repetir muitas vezes as mesmas tarefas?" },
+        { id: 9, dim: "Controle", txt: "No seu trabalho, você tem que repetir muitas vezes as mesmas tarefas?", invert: true },
         { id: 10, dim: "Controle", txt: "Você pode escolher COMO fazer o seu trabalho?" },
         { id: 11, dim: "Controle", txt: "Você pode escolher O QUE fazer no seu trabalho?" },
         { id: 12, dim: "Apoio Social", txt: "Existe um ambiente calmo e agradável onde trabalho?" },
@@ -124,6 +107,7 @@
         { id: 17, dim: "Apoio Social", txt: "Eu gosto de trabalhar com meus colegas." }
     ];
 
+    // Renderizar questões
     const container = document.getElementById('container-questoes');
     perguntas.forEach(p => {
         const labels = p.id >= 12 ? ["Concordo Totalmente", "Concordo Parcialmente", "Discordo Parcialmente", "Discordo Totalmente"] : ["Frequentemente", "Às vezes", "Raramente", "Nunca"];
@@ -131,80 +115,100 @@
         let options = labels.map((l, i) => `
             <div class="option">
                 <label><input type="radio" name="q${p.id}" value="${4-i}" required> ${l}</label>
-                <span class="weight">Peso: ${4-i}</span>
+                <span class="weight">Valor: ${4-i}</span>
             </div>`).join('');
-        container.innerHTML += `<div class="q-card"><div class="tag" style="background:${color}">${p.dim}</div><p><strong>${p.id}. ${p.txt}</strong></p>${options}</div>`;
+        container.innerHTML += `<div class="q-card"><div class="tag" style="background:${color}">${p.dim}</div><p><strong>${p.id}. ${p.txt}</strong> ${p.invert ? '<small>(Item Invertido)</small>' : ''}</p>${options}</div>`;
     });
 
-    // Função de Envio
+    // Envio com regra de inversão
     document.getElementById('btn-enviar').onclick = async () => {
         const setor = document.getElementById('setor-select').value;
         if(!setor) return alert("Selecione o setor!");
-        
         const respondidas = document.querySelectorAll('input[type="radio"]:checked');
-        if(respondidas.length < 17) return alert("Responda todas as perguntas!");
+        if(respondidas.length < 17) return alert("Responda todas as questões!");
 
         let somas = { Demandas: 0, Controle: 0, Apoio: 0 };
         perguntas.forEach(p => {
-            const val = parseInt(document.querySelector(`input[name="q${p.id}"]:checked`).value);
+            let val = parseInt(document.querySelector(`input[name="q${p.id}"]:checked`).value);
+            // REGRA: Inverter itens 4 e 9
+            if(p.invert) val = 5 - val; 
+            
             const key = p.dim === "Apoio Social" ? "Apoio" : p.dim;
             somas[key] += val;
         });
 
         try {
             document.getElementById('btn-enviar').disabled = true;
-            document.getElementById('btn-enviar').innerText = "Enviando...";
-            
-            await addDoc(collection(db, "respostas_jss"), {
-                setor,
-                ...somas,
-                data: new Date()
-            });
-
-            alert("Sucesso! Dados gravados no Firestore.");
+            await addDoc(collection(db, "respostas_jss"), { setor, ...somas, data: new Date() });
+            alert("Avaliação enviada com sucesso!");
             document.getElementById('form-pgr').reset();
             window.scrollTo(0,0);
-        } catch (err) {
-            console.error("Erro completo:", err);
-            alert("Erro: " + err.message);
-        } finally {
-            document.getElementById('btn-enviar').disabled = false;
-            document.getElementById('btn-enviar').innerText = "Enviar Avaliação ao Firestore";
-        }
+        } catch (e) { alert("Erro ao enviar."); } 
+        finally { document.getElementById('btn-enviar').disabled = false; }
     };
 
-    // Navegação
-    document.getElementById('btn-colab').onclick = () => {
-        document.getElementById('screen-colaborador').classList.add('active');
-        document.getElementById('screen-admin').classList.remove('active');
-    };
-    document.getElementById('btn-admin').onclick = () => {
-        document.getElementById('screen-admin').classList.add('active');
-        document.getElementById('screen-colaborador').classList.remove('active');
-    };
+    // Navegação simples
+    document.getElementById('btn-colab').onclick = () => { document.getElementById('screen-colaborador').classList.add('active'); document.getElementById('screen-admin').classList.remove('active'); };
+    document.getElementById('btn-admin').onclick = () => { document.getElementById('screen-admin').classList.add('active'); document.getElementById('screen-colaborador').classList.remove('active'); };
 
-    // Relatório
+    // Lógica de Mediana e Relatório
+    function getMediana(arr) {
+        if(arr.length === 0) return 0;
+        arr.sort((a, b) => a - b);
+        const mid = Math.floor(arr.length / 2);
+        return arr.length % 2 !== 0 ? arr[mid] : (arr[mid - 1] + arr[mid]) / 2;
+    }
+
     document.getElementById('btn-gerar-relatorio').onclick = async () => {
         const snapshot = await getDocs(collection(db, "respostas_jss"));
-        let analise = {};
+        let todosDados = [];
+        let setores = {};
+
         snapshot.forEach(doc => {
             const d = doc.data();
-            if(!analise[d.setor]) analise[d.setor] = { d: [], c: [], a: [] };
-            analise[d.setor].d.push(d.Demandas);
-            analise[d.setor].c.push(d.Controle);
-            analise[d.setor].a.push(d.Apoio);
+            todosDados.push(d);
+            if(!setores[d.setor]) setores[d.setor] = { d: [], c: [], a: [] };
+            setores[d.setor].d.push(d.Demandas);
+            setores[d.setor].c.push(d.Controle);
+            setores[d.setor].a.push(d.Apoio);
         });
 
-        let html = "";
-        for (let s in analise) {
-            const mD = analise[s].d.reduce((a,b)=>a+b)/analise[s].d.length;
-            const mA = analise[s].a.reduce((a,b)=>a+b)/analise[s].a.length;
-            if(mD > 15 || mA < 15) {
-                html += `<tr><td>${s}</td><td>${mD > 15 ? 'Alta Carga' : 'Baixo Suporte'}</td><td>Intervenção</td><td>30d</td></tr>`;
-            }
+        // Mediana Global do Grupo
+        const medD = getMediana(todosDados.map(i => i.Demandas));
+        const medC = getMediana(todosDados.map(i => i.Controle));
+        const medA = getMediana(todosDados.map(i => i.Apoio));
+
+        let html = `<h3>Medianas do Grupo: Demanda: ${medD} | Controle: ${medC} | Apoio: ${medA}</h3>
+                    <table><thead><tr><th>Setor</th><th>Quadrante</th><th>Risco</th><th>Apoio Social</th><th>Ação Sugerida</th></tr></thead><tbody>`;
+
+        for (let s in setores) {
+            const mD = setores[s].d.reduce((a,b)=>a+b)/setores[s].d.length;
+            const mC = setores[s].c.reduce((a,b)=>a+b)/setores[s].c.length;
+            const mA = setores[s].a.reduce((a,b)=>a+b)/setores[s].a.length;
+
+            let quadrante = "";
+            let risco = "";
+            let cor = "";
+
+            if(mD > medD && mC < medC) { quadrante = "Trabalho Alta Exigência"; risco = "ALTO"; cor = "var(--danger)"; }
+            else if(mD > medD && mC >= medC) { quadrante = "Trabalho Ativo"; risco = "Médio"; cor = "var(--warning)"; }
+            else if(mD <= medD && mC < medC) { quadrante = "Trabalho Passivo"; risco = "Médio"; cor = "var(--warning)"; }
+            else { quadrante = "Trabalho Baixa Exigência"; risco = "Baixo"; cor = "var(--success)"; }
+
+            const apoioStatus = mA < medA ? "⚠️ Baixo (Agravante)" : "🛡️ Alto (Proteção)";
+
+            html += `<tr>
+                <td>${s}</td>
+                <td>${quadrante}</td>
+                <td><span class="risk-badge" style="background:${cor}">${risco}</span></td>
+                <td>${apoioStatus}</td>
+                <td>${risco === "ALTO" ? "Intervenção Imediata (30d)" : "Monitoramento semestral"}</td>
+            </tr>`;
         }
+        
+        html += "</tbody></table>";
         document.getElementById('relatorio-ia-area').classList.add('active');
-        document.getElementById('ia-content').innerHTML = `<table><thead><tr><th>Setor</th><th>Risco</th><th>Ação</th><th>Prazo</th></tr></thead><tbody>${html || '<tr><td colspan="4">Sem riscos</td></tr>'}</tbody></table>`;
+        document.getElementById('ia-content').innerHTML = html;
     };
 </script>
 </body>
