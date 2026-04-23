@@ -195,7 +195,7 @@
 
     const contQ = document.getElementById('container-questoes');
     perguntas.forEach(p => {
-        const labs = p.id >= 12 ? ["Concordo Totalmente", "Concordo Parcialmente", "Discordo Parcialmente", "Discordo Totalmente"] : ["Sempre", "Às vezes", "Raramente", "Nunca"];
+        const labs = p.id >= 12 ? ["Concordo Totalmente", "Concordo Parcialmente", "Discordo Parcialmente", "Discordo Totalmente"] : ["Frequentemente", "Às vezes", "Raramente", "Nunca ou quase nunca"];
         let opts = labs.map((l, i) => `
             <div class="option-item">
                 <input type="radio" name="q${p.id}" id="q${p.id}_${i}" value="${4-i}" required>
