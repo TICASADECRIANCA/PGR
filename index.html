@@ -31,40 +31,34 @@
         .info-card { background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%); color: white; border: none; margin-bottom: 25px; }
 
         /* Matriz de Risco */
-        .risk-matrix { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-top: 15px; text-align: center; font-size: 10px; font-weight: bold; color: white; }
-        .m-cell { padding: 15px; border-radius: 4px; position: relative; min-height: 60px; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(0,0,0,0.1); }
+        .risk-matrix { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; text-align: center; font-size: 9px; font-weight: bold; color: white; }
+        .m-cell { padding: 12px; border-radius: 4px; position: relative; min-height: 55px; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(0,0,0,0.05); }
         .m-low { background: var(--success); }
         .m-med { background: var(--warning); color: #000; }
         .m-high { background: var(--danger); }
-        .marker { position: absolute; background: white; border: 2px solid black; border-radius: 50%; width: 14px; height: 14px; box-shadow: 0 0 5px rgba(0,0,0,0.5); z-index: 10; }
+        .marker { position: absolute; background: white; border: 2px solid black; border-radius: 50%; width: 14px; height: 14px; box-shadow: 0 0 5px rgba(0,0,0,0.5); z-index: 10; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
 
-        /* Pirâmide */
-        .pyramid-container { display: flex; flex-direction: column; align-items: center; margin-top: 20px; }
-        .p-tier { width: 0; height: 0; border-left: 50px solid transparent; border-right: 50px solid transparent; position: relative; margin-bottom: 2px; }
-        .p-high { border-bottom: 50px solid var(--danger); width: 100px; }
-        .p-med { border-bottom: 70px solid var(--warning); width: 180px; }
-        .p-low { border-bottom: 90px solid var(--success); width: 260px; }
-        .p-text { position: absolute; width: 200px; text-align: center; left: -100px; font-size: 11px; font-weight: bold; }
-
-        .options-container { display: flex; flex-direction: column; gap: 10px; }
-        .option-item { position: relative; }
-        .option-item input[type="radio"] { position: absolute; opacity: 0; }
-        .option-label { display: block; padding: 16px; border: 1px solid var(--border); border-radius: 10px; cursor: pointer; transition: 0.2s; }
-        .option-item input[type="radio"]:checked + .option-label { background: var(--primary-dark); color: white; border-color: var(--primary-dark); }
+        /* Pirâmide Ajustada */
+        .pyramid-container { display: flex; flex-direction: column; align-items: center; margin-top: 10px; }
+        .p-tier { position: relative; display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 10px; margin-bottom: 4px; text-align: center; transition: 0.3s; clip-path: polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%); }
+        .p-high { background: var(--danger); width: 120px; height: 45px; clip-path: polygon(50% 0%, 100% 100%, 0% 100%); }
+        .p-med { background: var(--warning); width: 200px; height: 50px; color: #000; }
+        .p-low { background: var(--success); width: 280px; height: 60px; }
 
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 25px; }
         .stat-card { background: white; padding: 20px; border-radius: 16px; border: 1px solid var(--border); text-align: center; }
         .stat-card p { margin: 10px 0 0; font-size: 28px; font-weight: 800; color: var(--primary-dark); }
 
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border); font-size: 14px; }
-        .progress-bg { background: #e2e8f0; border-radius: 10px; height: 8px; width: 100%; overflow: hidden; }
-        .progress-fill { background: var(--primary); height: 100%; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid var(--border); font-size: 13px; }
+        th { background: #f8fafc; color: var(--text-muted); text-transform: uppercase; font-size: 11px; }
 
-        input, select, textarea { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); margin-top: 5px; font-size: 14px; }
-        .primary-btn { background: var(--primary); color: white; padding: 18px; border-radius: 12px; border: none; font-weight: 700; cursor: pointer; width: 100%; transition: 0.3s; }
-        .primary-btn:hover { background: var(--primary-dark); }
+        input, select, textarea { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); margin-top: 5px; }
+        .primary-btn { background: var(--primary); color: white; padding: 18px; border-radius: 12px; border: none; font-weight: 700; cursor: pointer; width: 100%; }
         .secondary-btn { background: white; color: var(--primary); border: 2px solid var(--primary); padding: 10px 20px; border-radius: 10px; font-weight: 700; cursor: pointer; }
+
+        .diag-box { border-left: 4px solid var(--primary); padding-left: 15px; margin-top: 15px; }
     </style>
 </head>
 <body>
@@ -74,17 +68,16 @@
     <button id="nav-admin" class="nav-btn" onclick="switchScreen('login')">Painel de Auditoria</button>
 </nav>
 
-<div class="container" id="main-content">
+<div class="container" id="capture-area">
     <section id="screen-colaborador" class="screen active">
         <div style="text-align: center; margin-bottom: 30px;">
             <h1 style="color: var(--primary); font-weight: 800;">Avaliação Psicossocial</h1>
-            <p style="color: var(--text-muted)">Preenchimento anônimo e seguro</p>
+            <p style="color: var(--text-muted)">Análise de Fatores de Risco Ocupacional</p>
         </div>
 
         <div class="q-card info-card">
-            <h3>📖 Instruções do Formulário</h3>
-            <p>Sua participação é fundamental para construirmos um ambiente de trabalho melhor. Todas as respostas são confidenciais e tratadas de forma estatística.</p>
-            <small>* Responda com base na sua rotina das últimas semanas.</small>
+            <h3 style="margin: 0 0 10px 0;">🎯 Objetivo da Avaliação</h3>
+            <p style="font-size: 14px; margin: 0;">Este formulário mapeia o equilíbrio entre <b>Demanda, Controle e Apoio</b>. Suas respostas auxiliam na prevenção de doenças ocupacionais e na melhoria do clima institucional. O preenchimento é sigiloso.</p>
         </div>
 
         <div class="q-card">
@@ -114,90 +107,86 @@
             
             <div class="q-card">
                 <b>18. Quais aspectos do seu trabalho hoje mais contribuem para o seu bem-estar?</b>
-                <textarea id="aberta-1" rows="3" placeholder="Sua resposta..."></textarea>
+                <textarea id="aberta1" rows="3" placeholder="Sua percepção sobre pontos positivos..."></textarea>
             </div>
             <div class="q-card">
                 <b>19. Se você pudesse sugerir uma melhoria para o seu dia a dia de trabalho, qual seria?</b>
-                <textarea id="aberta-2" rows="3" placeholder="Sua resposta..."></textarea>
+                <textarea id="aberta2" rows="3" placeholder="Sua sugestão de melhoria..."></textarea>
             </div>
 
             <button type="button" class="primary-btn" onclick="enviarDados()" style="margin-bottom: 50px;">ENVIAR AVALIAÇÃO</button>
         </form>
     </section>
 
-    <section id="screen-login" class="screen">
-        <div class="q-card" style="max-width: 400px; margin: 100px auto; text-align: center;">
-            <h2>🔒 Acesso Restrito</h2>
-            <input type="password" id="admin-pass" placeholder="Senha Mestra">
-            <button class="primary-btn" onclick="verificarSenha()" style="margin-top: 15px;">ENTRAR</button>
-        </div>
-    </section>
-
     <section id="screen-admin" class="screen">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h2 style="margin: 0;">Relatório de Auditoria</h2>
-            <button class="secondary-btn" onclick="exportarPDF()">📄 Exportar PDF</button>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+            <h2 style="margin: 0;">Relatório Gerencial de Riscos</h2>
+            <button class="secondary-btn" onclick="exportarRelatorioPDF()">📄 Baixar Relatório PDF</button>
         </div>
 
         <div class="stats-grid">
             <div class="stat-card"><h4>Base</h4><p id="total-base">0</p></div>
             <div class="stat-card"><h4>Realizados</h4><p id="total-feitos" style="color: var(--success)">0</p></div>
-            <div class="stat-card"><h4>Pendentes</h4><p id="total-pendentes" style="color: var(--danger)">0</p></div>
             <div class="stat-card"><h4>Adesão</h4><p id="total-adesao">0%</p></div>
         </div>
 
         <div class="q-card">
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                 <div>
-                    <label>Filtrar por Setor:</label>
+                    <label>Filtrar Visão por Setor:</label>
                     <select id="filtro-setor" onchange="gerarRelatorio()">
                         <option value="GERAL">Visão Geral Empresa</option>
                     </select>
                 </div>
                 <div>
-                    <label>Importar Base (.txt):</label>
+                    <label>Importar Base:</label>
                     <input type="file" id="import-txt" accept=".txt">
                 </div>
             </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 20px;">
             <div class="q-card">
-                <h3>🗺️ Mapa de Risco (Matriz Karasek)</h3>
+                <h3>📊 Perfil Psicossocial e Diagnóstico</h3>
+                <div style="max-width: 300px; margin: 0 auto;">
+                    <canvas id="chartRadar"></canvas>
+                </div>
+                <div id="diagnostico-unificado" class="diag-box">
+                    </div>
+            </div>
+
+            <div class="q-card">
+                <h3>⚠️ Análise de Criticidade</h3>
                 <div class="risk-matrix">
-                    <div class="m-cell m-med">MÉDIO</div><div class="m-cell m-high">ALTO</div><div class="m-cell m-high" id="cell-critico">CRÍTICO</div>
-                    <div class="m-cell m-low">BAIXO</div><div class="m-cell m-med" id="cell-passivo">PASSIVO</div><div class="m-cell m-high">ALTO</div>
-                    <div class="m-cell m-low" id="cell-ideal">IDEAL</div><div class="m-cell m-low">BAIXO</div><div class="m-cell m-med">MÉDIO</div>
+                    <div class="m-cell m-med">MÉDIO</div><div class="m-cell m-high">ALTO</div><div class="m-cell m-high" id="cell-3">CRÍTICO</div>
+                    <div class="m-cell m-low">BAIXO</div><div class="m-cell m-med" id="cell-2">ALERTA</div><div class="m-cell m-high">ALTO</div>
+                    <div class="m-cell m-low" id="cell-1">IDEAL</div><div class="m-cell m-low">BAIXO</div><div class="m-cell m-med">MÉDIO</div>
                 </div>
-                <p style="font-size: 11px; color: var(--text-muted); margin-top: 10px;">Eixo Horizontal: Controle | Eixo Vertical: Demanda</p>
-            </div>
-
-            <div class="q-card">
-                <h3>🔺 Pirâmide de Prioridade</h3>
+                
                 <div class="pyramid-container">
-                    <div class="p-tier p-high" id="p-high"><div class="p-text" style="top: 20px; color: white;">AÇÃO IMEDIATA</div></div>
-                    <div class="p-tier p-med" id="p-med"><div class="p-text" style="top: 30px; color: black;">MONITORAMENTO</div></div>
-                    <div class="p-tier p-low" id="p-low"><div class="p-text" style="top: 40px; color: white;">MANUTENÇÃO</div></div>
+                    <div class="p-tier p-high" id="p-1">AÇÃO IMEDIATA</div>
+                    <div class="p-tier p-med" id="p-2">MONITORAMENTO</div>
+                    <div class="p-tier p-low" id="p-3">MANUTENÇÃO</div>
                 </div>
             </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 20px;">
-            <div class="q-card">
-                <h3>📊 Perfil Radar</h3>
-                <canvas id="chartRadar"></canvas>
-            </div>
-            <div id="risk-analysis-container"></div>
+        <div class="q-card">
+            <h3>🎯 Plano de Ação Estratégico (5W2H)</h3>
+            <div id="plano-detalhado"></div>
         </div>
 
         <div class="q-card">
-            <h3>🎯 Plano de Ação (5W2H)</h3>
-            <div id="plano-acao-container"></div>
-        </div>
-
-        <div class="q-card">
-            <h3>📋 Adesão por Setor</h3>
+            <h3>📋 Tabela de Adesão</h3>
             <div id="tabela-adesao"></div>
+        </div>
+    </section>
+
+    <section id="screen-login" class="screen">
+        <div class="q-card" style="max-width: 400px; margin: 100px auto; text-align: center;">
+            <h2>Acesso Restrito</h2>
+            <input type="password" id="admin-pass" placeholder="Senha Mestra">
+            <button class="primary-btn" onclick="verificarSenha()" style="margin-top: 15px;">ENTRAR</button>
         </div>
     </section>
 </div>
@@ -256,7 +245,7 @@
         const cpf = document.getElementById('cpf-input').value.replace(/\D/g,'');
         const setor = document.getElementById('setor-select').value;
         const resps = document.querySelectorAll('input[type="radio"]:checked');
-        if(cpf.length < 11 || !setor || resps.length < 17) return alert("Preencha tudo!");
+        if(cpf.length < 11 || !setor || resps.length < 17) return alert("Preencha todos os campos!");
 
         const check = await getDocs(query(collection(db, "respostas_pgr"), where("cpf", "==", cpf)));
         if(!check.empty) return alert("CPF já cadastrado.");
@@ -271,11 +260,11 @@
 
         await addDoc(collection(db, "respostas_pgr"), { 
             cpf, setor, ...somas, 
-            aberta1: document.getElementById('aberta-1').value,
-            aberta2: document.getElementById('aberta-2').value,
+            bemEstar: document.getElementById('aberta1').value,
+            sugestao: document.getElementById('aberta2').value,
             data: new Date().toISOString() 
         });
-        alert("Sucesso!"); location.reload();
+        alert("Enviado!"); location.reload();
     };
 
     window.verificarSenha = () => {
@@ -283,16 +272,14 @@
         else alert("Senha incorreta.");
     };
 
-    window.exportarPDF = async () => {
+    window.exportarRelatorioPDF = async () => {
         const { jsPDF } = window.jspdf;
-        const container = document.getElementById('main-content');
-        const canvas = await html2canvas(container, { scale: 2 });
-        const img = canvas.toDataURL('image/png');
+        const canvas = await html2canvas(document.getElementById('capture-area'), { scale: 2 });
         const pdf = new jsPDF('p', 'mm', 'a4');
         const w = pdf.internal.pageSize.getWidth();
         const h = (canvas.height * w) / canvas.width;
-        pdf.addImage(img, 'PNG', 0, 0, w, h);
-        pdf.save('Relatorio_PGR_Digital.pdf');
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, w, h);
+        pdf.save('Relatorio_Psicossocial.pdf');
     };
 
     let chartR;
@@ -302,42 +289,44 @@
         const base = bSnap.docs.map(d => d.data());
         const filtro = document.getElementById('filtro-setor').value;
 
-        const baseF = filtro === "GERAL" ? base : base.filter(b => b.setor === filtro);
         const respsF = filtro === "GERAL" ? resps : resps.filter(r => r.setor === filtro);
+        const baseF = filtro === "GERAL" ? base : base.filter(b => b.setor === filtro);
 
         document.getElementById('total-base').innerText = baseF.length;
         document.getElementById('total-feitos').innerText = respsF.length;
-        document.getElementById('total-pendentes').innerText = baseF.length - respsF.length;
         document.getElementById('total-adesao').innerText = baseF.length > 0 ? Math.round((respsF.length/baseF.length)*100)+"%" : "0%";
 
         const mD = respsF.length ? respsF.reduce((a,b)=>a+b.Demandas,0)/respsF.length : 0;
         const mC = respsF.length ? respsF.reduce((a,b)=>a+b.Controle,0)/respsF.length : 0;
         const mA = respsF.length ? respsF.reduce((a,b)=>a+b.Apoio,0)/respsF.length : 0;
 
-        // Resetar Matrix e Piramide
+        // RESET VISUALS
         document.querySelectorAll('.marker').forEach(m => m.remove());
-        document.querySelectorAll('.p-tier').forEach(p => p.style.opacity = "0.3");
+        document.querySelectorAll('.p-tier').forEach(p => p.style.opacity = "0.2");
 
-        let diag = "", acao = "";
+        let diag = "", planoHtml = "", cellId = "", pId = "";
+
         if(mD >= 15 && mC < 16) {
-            diag = "Alta Tensão (Crítico)";
-            document.getElementById('cell-critico').innerHTML += '<div class="marker"></div>';
-            document.getElementById('p-high').style.opacity = "1";
-            acao = "<table><tr><th>O que</th><th>Como</th><th>Quem</th></tr><tr><td>Redução de Carga</td><td>Revisão de processos e prazos</td><td>Diretoria</td></tr></table>";
+            diag = "<b style='color:red'>ALTA TENSÃO (CRÍTICO)</b><br>O setor apresenta alta demanda e baixo controle. Risco elevado de esgotamento.";
+            cellId = "cell-3"; pId = "p-1";
+            planoHtml = `<table><tr><th>O que</th><th>Como</th><th>Quem</th><th>Prazo</th></tr>
+                        <tr><td>Revisão de Carga</td><td>Redistribuir tarefas e ajustar prazos</td><td>Gestoria</td><td>30 dias</td></tr>
+                        <tr><td>Aumento de Autonomia</td><td>Permitir escolha de métodos de trabalho</td><td>RH/Diretoria</td><td>Immediate</td></tr></table>`;
         } else if(mD < 15 && mC < 16) {
-            diag = "Passivo (Baixo Estímulo)";
-            document.getElementById('cell-passivo').innerHTML += '<div class="marker"></div>';
-            document.getElementById('p-med').style.opacity = "1";
-            acao = "<table><tr><th>O que</th><th>Como</th><th>Quem</th></tr><tr><td>Enriquecimento de Tarefas</td><td>Novos desafios e treinamentos</td><td>RH</td></tr></table>";
+            diag = "<b style='color:orange'>TRABALHO PASSIVO</b><br>Baixa demanda e baixo controle. Risco de desmotivação e tédio.";
+            cellId = "cell-2"; pId = "p-2";
+            planoHtml = `<table><tr><th>O que</th><th>Como</th><th>Quem</th><th>Prazo</th></tr>
+                        <tr><td>Job Rotation</td><td>Novos desafios e rotação de funções</td><td>RH</td><td>60 dias</td></tr></table>`;
         } else {
-            diag = "Ideal (Baixo Risco)";
-            document.getElementById('cell-ideal').innerHTML += '<div class="marker"></div>';
-            document.getElementById('p-low').style.opacity = "1";
-            acao = "<p>Manter as condições atuais e monitorar apoio social.</p>";
+            diag = "<b style='color:green'>TRABALHO ATIVO / IDEAL</b><br>Equilíbrio saudável. Manter estímulo e apoio social.";
+            cellId = "cell-1"; pId = "p-3";
+            planoHtml = `<p>✅ Nenhuma ação corretiva urgente. Manter programa de feedbacks e integração.</p>`;
         }
 
-        document.getElementById('risk-analysis-container').innerHTML = `<div class="q-card"><h3>Diagnóstico: ${diag}</h3><p>Demandas: ${mD.toFixed(1)} | Controle: ${mC.toFixed(1)} | Apoio: ${mA.toFixed(1)}</p></div>`;
-        document.getElementById('plano-acao-container').innerHTML = acao;
+        document.getElementById('diagnostico-unificado').innerHTML = `<h4>Diagnóstico Karasek:</h4><p>${diag}</p>`;
+        document.getElementById('plano-detalhado').innerHTML = planoHtml;
+        if(cellId) document.getElementById(cellId).innerHTML += '<div class="marker"></div>';
+        if(pId) document.getElementById(pId).style.opacity = "1";
 
         if(chartR) chartR.destroy();
         chartR = new Chart(document.getElementById('chartRadar'), {
@@ -346,7 +335,7 @@
                 labels: ['Demandas', 'Controle', 'Apoio'],
                 datasets: [{ label: filtro, data: [mD, mC, mA], backgroundColor: 'rgba(99, 102, 241, 0.2)', borderColor: '#6366f1' }]
             },
-            options: { scales: { r: { min: 0, max: 24 } } }
+            options: { scales: { r: { min: 0, max: 24, ticks: { display: false } } } }
         });
 
         renderTabela(resps, base);
@@ -354,12 +343,12 @@
 
     function renderTabela(resps, base) {
         const setores = ["ADMINISTRATIVO", "PEDAGÓGICO", "ESPECIALIDADES", "NUTRIÇÃO", "TI", "COMUNICAÇÃO", "INFRAESTRUTURA", "SISTEMA INTEGRAL", "RECURSOS HUMANOS", "DEPARTAMENTO PESSOAL", "EVENTOS", "ENFERMAGEM", "DIRETORIA"];
-        let html = `<table><thead><tr><th>Setor</th><th>Adesão</th><th>Feitos</th><th>Pendentes</th></tr></thead><tbody>`;
+        let html = `<table><thead><tr><th>Setor</th><th>Adesão</th><th>Feitos</th></tr></thead><tbody>`;
         setores.forEach(s => {
             const f = resps.filter(r => r.setor === s).length;
             const t = base.filter(b => b.setor === s).length;
             const p = t > 0 ? Math.round((f/t)*100) : 0;
-            html += `<tr><td><b>${s}</b></td><td><div class="progress-bg"><div class="progress-fill" style="width:${p}%"></div></div></td><td>${f}</td><td style="color:${t-f > 0 ? 'red' : 'green'}">${t-f}</td></tr>`;
+            html += `<tr><td><b>${s}</b></td><td><div class="progress-bg"><div class="progress-fill" style="width:${p}%"></div></div> ${p}%</td><td>${f}/${t}</td></tr>`;
         });
         document.getElementById('tabela-adesao').innerHTML = html + "</tbody></table>";
     }
@@ -379,7 +368,6 @@
         }
     };
 
-    // Importação de arquivo preservada
     document.getElementById('import-txt').onchange = async (e) => {
         const reader = new FileReader();
         reader.onload = async () => {
@@ -393,10 +381,10 @@
         reader.readAsText(e.target.files[0]);
     };
 
-    // Populando filtro
-    const selFiltro = document.getElementById('filtro-setor');
+    // Popula select filtro
+    const sel = document.getElementById('filtro-setor');
     ["ADMINISTRATIVO", "PEDAGÓGICO", "ESPECIALIDADES", "NUTRIÇÃO", "TI", "COMUNICAÇÃO", "INFRAESTRUTURA", "SISTEMA INTEGRAL", "RECURSOS HUMANOS", "DEPARTAMENTO PESSOAL", "EVENTOS", "ENFERMAGEM", "DIRETORIA"].forEach(s => {
-        selFiltro.innerHTML += `<option value="${s}">${s}</option>`;
+        sel.innerHTML += `<option value="${s}">${s}</option>`;
     });
 
 </script>
